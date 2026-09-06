@@ -2,15 +2,15 @@
 
 This repository contains the two-container local installation for expert.chat. It starts the application and PostgreSQL, creates the installation secrets automatically, stores data in Docker named volumes and exposes the application only on `127.0.0.1:4000` by default.
 
-## Install a specific release
+## Install
 
 Install [Docker](https://docs.docker.com/get-docker/) with Docker Compose, then run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/v0.2.0/compose.yaml | docker compose -p expert-chat -f - up -d
+curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/compose.yaml | docker compose -p expert-chat -f - up -d
 ```
 
-Open <http://localhost:4000> when the application becomes ready. The first release may take a few minutes to download and prepare its database. To claim a new appliance, setup asks for a Resend API key and verified sender so that email-code login will work; it stores the key encrypted and never returns it through the API. Sentry remains optional.
+Open <http://localhost:4000> when the application becomes ready. The first release may take a few minutes to download and prepare its database. To claim a new appliance, setup asks for a Resend API key and verified sender so that email-code login will work; it stores the key encrypted and never returns it through the API. Sentry remains optional. For an exactly reproducible install, replace `stable` with the immutable Compose release `v0.2.0`.
 
 Release `v0.2.0` supports `linux/amd64`. Apple Silicon support will return before v1 after native acceptance testing; do not force this amd64-only release onto an arm64 computer.
 
@@ -32,7 +32,13 @@ curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/v0.2.0/compo
 
 Set `EXPERT_CHAT_PORT` on the Compose side of the pipe if port 4000 is already occupied. For example, `curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/v0.2.0/compose.yaml | EXPERT_CHAT_PORT=4080 docker compose -p expert-chat -f - up -d` exposes the application at <http://localhost:4080>.
 
-The reviewed `stable` channel will be documented after this release passes the clean-install, persistence, recovery and resource acceptance exercises. Version tags never move and remain the reproducible installation contract.
+The reviewed `stable` channel currently selects Compose release `v0.2.0`. It advances only after a candidate passes the clean-install, persistence, recovery and resource acceptance exercises. Version tags never move and remain the reproducible installation contract.
+
+## Resource guidance
+
+Make at least 2 GiB available to Docker for this pre-v1 appliance. On the amd64 acceptance host, the two services used about 569 MiB while idle and peaked at about 599 MiB during a deliberately small real Sync of 11 responses. The 2 GiB recommendation leaves operating headroom without imposing brittle per-container limits. It is not proof that a large initial Sync will fit: stage those collections in small batches and measure again before committing to a multi-day import.
+
+The v1 release gate repeats this measurement on an Apple Silicon Mac with a native `linux/arm64` image and records the Docker Desktop allocation. The current amd64-only release must not be run through emulation as a substitute for that proof.
 
 ## Back up
 
@@ -51,13 +57,13 @@ The secret archive contains the keys that protect sessions and saved provider Cr
 
 ## Update and roll back
 
-Take a backup first. To move to the next compatible, immutable release:
+Take a backup first. To move to the currently accepted compatible release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/v0.2.0/compose.yaml | docker compose -p expert-chat -f - up -d
+curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/compose.yaml | docker compose -p expert-chat -f - up -d
 ```
 
-Compose downloads and recreates the application only when its pinned image changes. It leaves PostgreSQL and both named volumes in place. Check readiness and logs before continuing important work.
+Compose downloads and recreates the application only when its pinned image changes. It leaves PostgreSQL and both named volumes in place. Check readiness and logs before continuing important work. Use the immutable `v0.2.0` URL instead when the exact release matters.
 
 To return to the previous compatible release:
 
