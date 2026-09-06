@@ -2,7 +2,7 @@ name: expert-chat
 
 services:
   app:
-    image: ${EXPERT_CHAT_IMAGE:-ghcr.io/experts-chat/expert-chat@sha256:858b116ea8017da34fecf5f9e2a814e6008896460d836598dfd34890ca243324}
+    image: ${EXPERT_CHAT_IMAGE:-ghcr.io/experts-chat/expert-chat@sha256:887cf95cef9a455d8e9311217f2761ae5f36f589f69e6113d52a54dd9f2a8ed4}
     restart: unless-stopped
     depends_on:
       db:
