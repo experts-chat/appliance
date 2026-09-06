@@ -7,10 +7,20 @@ This repository contains the two-container local installation for expert.chat. I
 Install [Docker](https://docs.docker.com/get-docker/) with Docker Compose, then run:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/install.sh | bash
+```
+
+The installer checks Docker, explains what it will change, offers background or temporary operation, waits until both services are ready and displays the one-time setup code. In a graphical session it opens the appliance only after you press a key. It downloads a pinned, checksum-verified copy of [Gum](https://github.com/charmbracelet/gum) into a private temporary directory for its friendly interface, installs nothing on the host and falls back to plain text if Gum is unavailable.
+
+The first release may take a few minutes to download and prepare its database. To claim a new appliance, setup asks for a Resend API key and verified sender so that email-code login will work; it stores the key encrypted and never returns it through the API. Sentry remains optional.
+
+For automation or direct Docker operation, the accepted Compose package remains available without the installer:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/compose.yaml | docker compose -p expert-chat -f - up -d
 ```
 
-Open <http://localhost:4000> when the application becomes ready. The first release may take a few minutes to download and prepare its database. To claim a new appliance, setup asks for a Resend API key and verified sender so that email-code login will work; it stores the key encrypted and never returns it through the API. Sentry remains optional. For an exactly reproducible install, replace `stable` with the immutable Compose release `v0.2.0`.
+Read either public file before running it if you prefer. For an exactly reproducible Compose install, replace `stable` with the immutable release `v0.2.0`.
 
 Release `v0.2.0` supports `linux/amd64`. Apple Silicon support will return before v1 after native acceptance testing; do not force this amd64-only release onto an arm64 computer.
 
@@ -57,13 +67,13 @@ The secret archive contains the keys that protect sessions and saved provider Cr
 
 ## Update and roll back
 
-Take a backup first. To move to the currently accepted compatible release:
+Take a backup first. Rerun the installer to move to the currently accepted compatible release; it recognises the existing installation and preserves its database and encryption keys:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/compose.yaml | docker compose -p expert-chat -f - up -d
+curl -fsSL https://raw.githubusercontent.com/experts-chat/appliance/stable/install.sh | bash
 ```
 
-Compose downloads and recreates the application only when its pinned image changes. It leaves PostgreSQL and both named volumes in place. Check readiness and logs before continuing important work. Use the immutable `v0.2.0` URL instead when the exact release matters.
+Underneath the installer, Compose downloads and recreates the application only when its pinned image changes. It leaves PostgreSQL and both named volumes in place. Use the immutable `v0.2.0` Compose URL shown in the operating commands when the exact release matters.
 
 To return to the previous compatible release:
 
