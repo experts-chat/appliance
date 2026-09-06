@@ -1,0 +1,75 @@
+name: expert-chat
+
+services:
+  app:
+    image: ${EXPERT_CHAT_IMAGE:-ghcr.io/experts-chat/expert-chat@sha256:858b116ea8017da34fecf5f9e2a814e6008896460d836598dfd34890ca243324}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        secret_dir=/run/expert-chat-secrets
+        postgres_password="$$(cat "$$secret_dir/postgres-password")"
+        export DATABASE_URL="ecto://expert_chat:$${postgres_password}@db/expert_chat"
+        export SECRET_KEY_BASE="$$(cat "$$secret_dir/secret-key-base")"
+        export EXPERT_CHAT_CREDENTIAL_KEY="$$(cat "$$secret_dir/credential-key")"
+        exec /app/bin/server
+    environment:
+      PHX_HOST: localhost
+      PHX_SERVER: "true"
+      PORT: "4000"
+    ports:
+      - "127.0.0.1:${EXPERT_CHAT_PORT:-4000}:4000"
+    volumes:
+      - installation-secrets:/run/expert-chat-secrets:ro
+    stop_grace_period: 45s
+
+  db:
+    image: postgres:18.6-trixie@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        secret_dir=/run/expert-chat-secrets
+        install -d -m 0700 -o 10001 -g 10001 "$$secret_dir"
+        if [ ! -s "$$secret_dir/postgres-password" ]; then
+          openssl rand -hex 32 > "$$secret_dir/postgres-password.tmp"
+          chown 10001:10001 "$$secret_dir/postgres-password.tmp"
+          chmod 0400 "$$secret_dir/postgres-password.tmp"
+          mv "$$secret_dir/postgres-password.tmp" "$$secret_dir/postgres-password"
+        fi
+        if [ ! -s "$$secret_dir/secret-key-base" ]; then
+          openssl rand -hex 64 > "$$secret_dir/secret-key-base.tmp"
+          chown 10001:10001 "$$secret_dir/secret-key-base.tmp"
+          chmod 0400 "$$secret_dir/secret-key-base.tmp"
+          mv "$$secret_dir/secret-key-base.tmp" "$$secret_dir/secret-key-base"
+        fi
+        if [ ! -s "$$secret_dir/credential-key" ]; then
+          openssl rand -base64 32 > "$$secret_dir/credential-key.tmp"
+          chown 10001:10001 "$$secret_dir/credential-key.tmp"
+          chmod 0400 "$$secret_dir/credential-key.tmp"
+          mv "$$secret_dir/credential-key.tmp" "$$secret_dir/credential-key"
+        fi
+        export POSTGRES_PASSWORD_FILE="$$secret_dir/postgres-password"
+        exec /usr/local/bin/docker-entrypoint.sh postgres
+    environment:
+      POSTGRES_DB: expert_chat
+      POSTGRES_USER: expert_chat
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username expert_chat --dbname expert_chat"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - installation-secrets:/run/expert-chat-secrets
+    stop_grace_period: 45s
+
+volumes:
+  installation-secrets:
+  postgres-data:
