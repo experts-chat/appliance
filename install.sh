@@ -295,10 +295,12 @@ detect_existing_installation() {
 
 choose_port() {
   local existing_port=""
+  local existing_running="false"
   local suggestion=4080
 
   if docker container inspect "$APP_CONTAINER" >/dev/null 2>&1; then
     existing_port="$(docker inspect --format '{{with (index .HostConfig.PortBindings "4000/tcp")}}{{(index . 0).HostPort}}{{end}}' "$APP_CONTAINER" 2>/dev/null || true)"
+    existing_running="$(docker inspect --format '{{.State.Running}}' "$APP_CONTAINER" 2>/dev/null || printf 'false')"
   fi
 
   if [[ -z "${EXPERT_CHAT_PORT:-}" && -n "$existing_port" ]]; then
@@ -307,7 +309,7 @@ choose_port() {
 
   valid_port "$PORT" || fatal "EXPERT_CHAT_PORT must be a number between 1 and 65535."
 
-  if port_is_open "$PORT" && [[ "$existing_port" != "$PORT" ]]; then
+  if port_is_open "$PORT" && [[ "$existing_port" != "$PORT" || "$existing_running" != "true" ]]; then
     warning "Port $PORT is already being used by another application."
     while port_is_open "$suggestion"; do
       suggestion=$((suggestion + 1))
